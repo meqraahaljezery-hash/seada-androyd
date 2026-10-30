@@ -43,6 +43,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "975429246398-3gk1b5gtj6dgoujp8beplgf2h1ej59l9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.meqraa.aljezery",
+            "certificate_hash": "c59e7ec5d7a38311b1069b2245c120e196765e46"
+          }
+        },
+        {
           "client_id": "975429246398-gket474d3mp06hbv07i14c955f4lg6h7.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
