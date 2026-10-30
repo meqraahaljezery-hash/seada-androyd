@@ -1,6 +1,9 @@
 package com.example
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -27,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.credentials.CredentialManager
 import com.example.data.auth.AuthManager
+import com.example.data.telegram.TelegramConfig
 import com.example.ui.theme.*
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
@@ -79,10 +83,7 @@ class MainActivity : ComponentActivity() {
                   showWelcomeBanner = true
                 },
                 onAuthError = { err ->
-                  currentUser = Firebase.auth.currentUser ?: run {
-                    showWelcomeBanner = true
-                    Firebase.auth.currentUser
-                  }
+                  Toast.makeText(context, "فشل تسجيل الدخول: $err", Toast.LENGTH_LONG).show()
                 },
                 onAuthCancelled = {},
                 scope = coroutineScope
@@ -795,6 +796,9 @@ fun PackagesScreen() {
 
 @Composable
 fun ChatsScreen() {
+  var subTab by remember { mutableStateOf("chats") }
+  val context = LocalContext.current
+
   LazyColumn(
     modifier = Modifier
       .fillMaxSize()
@@ -803,34 +807,103 @@ fun ChatsScreen() {
     verticalArrangement = Arrangement.spacedBy(10.dp)
   ) {
     item {
-      Text("المحادثات الخاصة", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaqraahText)
-    }
-    item {
-      Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
       ) {
-        Row(
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(14.dp),
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(12.dp)
+        Button(
+          onClick = { subTab = "chats" },
+          colors = ButtonDefaults.buttonColors(containerColor = if (subTab == "chats") MaqraahPrimary else MaterialTheme.colorScheme.surface),
+          modifier = Modifier.weight(1f)
         ) {
-          Surface(
-            shape = CircleShape,
-            color = MaqraahPrimaryLight,
-            modifier = Modifier.size(44.dp)
+          Text("محادثات خاصة", color = if (subTab == "chats") Color.White else MaqraahTextMuted)
+        }
+        Button(
+          onClick = { subTab = "groups" },
+          colors = ButtonDefaults.buttonColors(containerColor = if (subTab == "groups") MaqraahPrimary else MaterialTheme.colorScheme.surface),
+          modifier = Modifier.weight(1f)
+        ) {
+          Text("مجموعات Telegram الرسمية", color = if (subTab == "groups") Color.White else MaqraahTextMuted)
+        }
+      }
+    }
+
+    if (subTab == "chats") {
+      item {
+        Card(
+          shape = RoundedCornerShape(16.dp),
+          colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+          Row(
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
           ) {
-            Box(contentAlignment = Alignment.Center) {
-              Text("م", color = Color.White, fontWeight = FontWeight.Bold)
+            Surface(
+              shape = CircleShape,
+              color = MaqraahPrimaryLight,
+              modifier = Modifier.size(44.dp)
+            ) {
+              Box(contentAlignment = Alignment.Center) {
+                Text("م", color = Color.White, fontWeight = FontWeight.Bold)
+              }
+            }
+            Column(modifier = Modifier.weight(1f)) {
+              Text("المقرأة الرسمية", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaqraahText)
+              Text("السلام عليكم ورحمة الله وبركاته", fontSize = 10.sp, color = MaqraahTextMuted)
+            }
+            Text("10:40 ص", fontSize = 9.sp, color = MaqraahTextMuted)
+          }
+        }
+      }
+    } else {
+      item {
+        Text("حلقات ومجموعات Telegram المعتمدة", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaqraahText)
+      }
+      items(TelegramConfig.groups.size) { idx ->
+        val grp = TelegramConfig.groups[idx]
+        Card(
+          shape = RoundedCornerShape(16.dp),
+          colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Column(
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(16.dp)
+          ) {
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Column(modifier = Modifier.weight(1f)) {
+                Text(grp.name, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaqraahPrimary)
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                  text = "التصنيف: ${if (grp.gender == "male") "رجال" else "نساء"} · الفترة: ${grp.period}",
+                  fontSize = 10.sp,
+                  color = MaqraahTextMuted
+                )
+              }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(
+              onClick = {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(grp.link))
+                context.startActivity(intent)
+              },
+              colors = ButtonDefaults.buttonColors(containerColor = MaqraahPrimary),
+              shape = RoundedCornerShape(12.dp),
+              modifier = Modifier.fillMaxWidth()
+            ) {
+              Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(16.dp))
+              Spacer(modifier = Modifier.width(8.dp))
+              Text("انضمام إلى مجموعة Telegram لمواصلة الدراسة", fontSize = 11.sp, fontWeight = FontWeight.Bold)
             }
           }
-          Column(modifier = Modifier.weight(1f)) {
-            Text("المقرأة الرسمية", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaqraahText)
-            Text("السلام عليكم ورحمة الله وبركاته", fontSize = 10.sp, color = MaqraahTextMuted)
-          }
-          Text("10:40 ص", fontSize = 9.sp, color = MaqraahTextMuted)
         }
       }
     }
@@ -928,7 +1001,7 @@ fun AdminMenuRow(title: String, icon: androidx.compose.ui.graphics.vector.ImageV
     modifier = Modifier
       .fillMaxWidth()
       .clickable {}
-    ) {
+  ) {
     Row(
       modifier = Modifier
         .fillMaxWidth()
@@ -937,7 +1010,7 @@ fun AdminMenuRow(title: String, icon: androidx.compose.ui.graphics.vector.ImageV
       horizontalArrangement = Arrangement.SpaceBetween
     ) {
       Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Icon(icon, contentDescription = null, tint = MaqraahPrimary, modifier = Modifier.size(20.dp))
+        Icon(icon, contentDescription = title, tint = MaqraahPrimary, modifier = Modifier.size(20.dp))
         Text(title, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaqraahText)
       }
       Icon(Icons.Default.ChevronLeft, contentDescription = null, tint = MaqraahTextMuted, modifier = Modifier.size(18.dp))

@@ -57,7 +57,7 @@ object AuthManager {
             userRef.set(userData, SetOptions.merge()).await()
             Log.d("AuthManager", "User metadata saved successfully for $uid with role 'student'")
         } catch (e: Exception) {
-            Log.e("AuthManager", "Failed to save user metadata to Firestore (offline/preview mode)", e)
+            Log.e("AuthManager", "Failed to save user metadata to Firestore", e)
         }
     }
 
@@ -120,14 +120,7 @@ object AuthManager {
             try {
                 val clientId = getWebClientId(context)
                 if (clientId.isNullOrBlank()) {
-                    Log.w("AuthManager", "default_web_client_id missing. Using preview authenticated student session.")
-                    val authResult = try {
-                        Firebase.auth.signInAnonymously().await()
-                    } catch (ex: Exception) {
-                        null
-                    }
-                    authResult?.user?.let { saveUserMetadataToFirestore(context, it) }
-                    onAuthSuccess()
+                    onAuthError("Google Sign-In configuration missing: default_web_client_id not found in google-services.json")
                     return@launch
                 }
 
@@ -149,14 +142,8 @@ object AuthManager {
                 Log.w("Auth", "Google Sign-In flow cancelled or dismissed: ${e.message}", e)
                 onAuthCancelled()
             } catch (e: Exception) {
-                Log.e("Auth", "Google Sign-In unavailable in preview. Using preview student session fallback.", e)
-                try {
-                    val authResult = Firebase.auth.signInAnonymously().await()
-                    authResult.user?.let { saveUserMetadataToFirestore(context, it) }
-                    onAuthSuccess()
-                } catch (fallbackEx: Exception) {
-                    onAuthError(e.localizedMessage ?: "Sign in failed")
-                }
+                Log.e("Auth", "Google Sign-In failed at Firebase Auth exchange", e)
+                onAuthError(e.localizedMessage ?: "Sign in failed with Firebase Auth")
             }
         }
     }
