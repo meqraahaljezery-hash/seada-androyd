@@ -1,0 +1,6 @@
+{
+  "name": "مقرأة الإمام الجزري",
+  "description": "مَقْرَأَةُ الإِمَامِ الجَزَرِيِّ لِلإِقْرَاءِ وَالإِجَازَةِ بِالسَّنَد — Imam Al-Jazari Center for Quran Recitation & Ijazah with Sanad",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

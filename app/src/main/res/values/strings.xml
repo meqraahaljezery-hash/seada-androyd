@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">مقرأة الإمام الجزري</string>
+    <string name="center_subtitle">للإقراء والإجازة بالسند</string>
+    <string name="nav_profile">حسابي</string>
+    <string name="nav_packages">باقاتي</string>
+    <string name="nav_home">الرئيسية</string>
+    <string name="nav_chats">المحادثات</string>
+    <string name="nav_admin">الإدارة</string>
+    <string name="welcome_greeting">مرحبًا بك 🌿</string>
+    <string name="welcome_subtitle">رحلتك مع القرآن الكريم تبدأ هنا</string>
+    <string name="programs_title">البرامج التعليمية</string>
+    <string name="prog_1">التلقين وتصحيح الأداء</string>
+    <string name="prog_1_desc">تصحيح التلاوة والمخارج والصفات بالتلقي</string>
+    <string name="prog_2">الحفظ المكثف</string>
+    <string name="prog_2_desc">الحفظ والمراجعة والمتابعة المنتظمة</string>
+    <string name="prog_3">إجازة حفص</string>
+    <string name="prog_3_desc">الإقراء وإجازة رواية حفص بالسند</string>
+    <string name="prog_4">القراءات السبع</string>
+    <string name="prog_4_desc">مسار متخصص للقراءات السبع المتواترة</string>
+    <string name="posts_title">المنشورات</string>
+    <string name="announcements_title">إعلانات المقرأة</string>
+    <string name="notifications_title">مركز الإشعارات</string>
+    <string name="groups_title">المجموعات الدراسية</string>
+    <string name="balance_label">رصيدي الحالي</string>
+    <string name="btn_start">ابدأ الآن</string>
+    <string name="btn_next">التالي</string>
+    <string name="btn_skip">تخطٍّ</string>
+    <string name="btn_signin_google">المتابعة باستخدام Google</string>
+    <string name="denied_title">ليس لديك صلاحية الوصول</string>
+    <string name="denied_desc">هذه الصفحة مخصصة للمدير العام والمستخدمين الإداريين المخولين فقط.</string>
+</resources>

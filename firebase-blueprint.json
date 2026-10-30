@@ -1,0 +1,120 @@
+{
+  "entities": {
+    "User": {
+      "path": "users/{uid}",
+      "schema": {
+        "uid": "string",
+        "name": "string",
+        "email": "string",
+        "photoUrl": "string",
+        "role": "string",
+        "status": "string",
+        "studentCode": "string",
+        "minuteBalance": "number",
+        "createdAt": "timestamp",
+        "updatedAt": "timestamp"
+      }
+    },
+    "Program": {
+      "path": "programs/{programId}",
+      "schema": {
+        "id": "string",
+        "titleAr": "string",
+        "titleEn": "string",
+        "description": "string",
+        "openForRegistration": "boolean",
+        "active": "boolean",
+        "sortOrder": "number"
+      }
+    },
+    "Enrollment": {
+      "path": "enrollments/{enrollmentId}",
+      "schema": {
+        "id": "string",
+        "uid": "string",
+        "programId": "string",
+        "status": "string",
+        "submittedAt": "timestamp",
+        "reviewedAt": "timestamp",
+        "reviewedBy": "string",
+        "rejectionReason": "string"
+      }
+    },
+    "Package": {
+      "path": "packages/{packageId}",
+      "schema": {
+        "id": "string",
+        "name": "string",
+        "minutes": "number",
+        "priceETB": "number",
+        "active": "boolean",
+        "sortOrder": "number"
+      }
+    },
+    "PaymentRequest": {
+      "path": "paymentRequests/{requestId}",
+      "schema": {
+        "id": "string",
+        "uid": "string",
+        "packageId": "string",
+        "amount": "number",
+        "method": "string",
+        "senderName": "string",
+        "senderPhone": "string",
+        "transactionReference": "string",
+        "status": "string",
+        "reviewer": "string",
+        "createdAt": "timestamp"
+      }
+    },
+    "CreditLedger": {
+      "path": "creditLedger/{entryId}",
+      "schema": {
+        "id": "string",
+        "uid": "string",
+        "type": "string",
+        "amount": "number",
+        "balanceBefore": "number",
+        "balanceAfter": "number",
+        "reason": "string",
+        "actorUid": "string",
+        "createdAt": "timestamp"
+      }
+    },
+    "Group": {
+      "path": "groups/{groupId}",
+      "schema": {
+        "id": "string",
+        "name": "string",
+        "genderCategory": "string",
+        "period": "string",
+        "memberUids": "array",
+        "active": "boolean",
+        "createdAt": "timestamp"
+      }
+    },
+    "Announcement": {
+      "path": "announcements/{announcementId}",
+      "schema": {
+        "id": "string",
+        "title": "string",
+        "body": "string",
+        "pinned": "boolean",
+        "createdBy": "string",
+        "createdAt": "timestamp"
+      }
+    },
+    "AuditLog": {
+      "path": "auditLogs/{logId}",
+      "schema": {
+        "id": "string",
+        "actorUid": "string",
+        "action": "string",
+        "targetType": "string",
+        "targetId": "string",
+        "reason": "string",
+        "timestamp": "timestamp"
+      }
+    }
+  }
+}

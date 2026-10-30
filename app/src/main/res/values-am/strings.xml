@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">የኢማም አል-ጀዘሪ ማዕከል</string>
+    <string name="center_subtitle">የቁርአን ንባብ እና ፈቃድ በሰነድ</string>
+    <string name="nav_profile">መገለጫዬ</string>
+    <string name="nav_packages">ፓኬጆች</string>
+    <string name="nav_home">መነሻ</string>
+    <string name="nav_chats">ውይይቶች</string>
+    <string name="nav_admin">አስተዳደር</string>
+    <string name="welcome_greeting">እንኳን ደህና መጡ 🌿</string>
+    <string name="welcome_subtitle">ጉዞዎ ከቅዱስ ቁርአን ጋር እዚህ ይጀምራል</string>
+    <string name="programs_title">የትምህርት ፕሮግራሞች</string>
+    <string name="prog_1">የንባብ ማስተካከያ</string>
+    <string name="prog_1_desc">ንባብን እና መخرجን ማስተካከል</string>
+    <string name="prog_2">തീവ്ര የህፍዝ ፕሮግራም</string>
+    <string name="prog_2_desc">ቁርአን መגרም እና ክትትል</string>
+    <string name="prog_3">የሀፍስ ኢጃዛ</string>
+    <string name="prog_3_desc">የሀፍስ ንባብ ፈቃድ በሰነድ</string>
+    <string name="prog_4">ሰባቱ ቂራአት</string>
+    <string name="prog_4_desc">ልዩ የሰባቱ ቂራአት ትምህርት</string>
+    <string name="posts_title">ልጥፎች</string>
+    <string name="announcements_title">ማስታወቂያዎች</string>
+    <string name="notifications_title">ማስታወሻዎች</string>
+    <string name="groups_title">የጥናት ቡድኖች</string>
+    <string name="balance_label">ቀሪ ደቂቃዎቼ</string>
+    <string name="btn_start">አሁን ጀምር</string>
+    <string name="btn_next">ቀጣይ</string>
+    <string name="btn_skip">ዝለል</string>
+    <string name="btn_signin_google">በ Google ግባ</string>
+    <string name="denied_title">እገዳ</string>
+    <string name="denied_desc">ይህ ገጽ ለአስተዳዳሪዎች ብቻ የተፈቀደ ነው።</string>
+</resources>

@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">Imam Al-Jazari Center</string>
+    <string name="center_subtitle">Quran Recitation &amp; Ijazah with Sanad</string>
+    <string name="nav_profile">Profile</string>
+    <string name="nav_packages">Packages</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_chats">Chats</string>
+    <string name="nav_admin">Admin</string>
+    <string name="welcome_greeting">Welcome 🌿</string>
+    <string name="welcome_subtitle">Your journey with the Holy Quran begins here</string>
+    <string name="programs_title">Educational Programs</string>
+    <string name="prog_1">Recitation Correction</string>
+    <string name="prog_1_desc">Correcting recitation &amp; Makharij by transmission</string>
+    <string name="prog_2">Intensive Memorization</string>
+    <string name="prog_2_desc">Hifz, revision, and regular monitoring</string>
+    <string name="prog_3">Hafs Ijazah</string>
+    <string name="prog_3_desc">Recitation and Ijazah of Hafs with Sanad</string>
+    <string name="prog_4">Seven Qira\'at</string>
+    <string name="prog_4_desc">Specialized path for the seven Qira\'at</string>
+    <string name="posts_title">Community Posts</string>
+    <string name="announcements_title">Center Announcements</string>
+    <string name="notifications_title">Notifications Center</string>
+    <string name="groups_title">Study Groups</string>
+    <string name="balance_label">My Balance</string>
+    <string name="btn_start">Get Started</string>
+    <string name="btn_next">Next</string>
+    <string name="btn_skip">Skip</string>
+    <string name="btn_signin_google">Continue with Google</string>
+    <string name="denied_title">Access Denied</string>
+    <string name="denied_desc">This page is restricted to authorized administrators only.</string>
+</resources>
