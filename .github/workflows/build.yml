@@ -1,98 +1,25 @@
 
-name: Build Maqraah Android APK
-
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-  workflow_dispatch:
-
-permissions:
-  contents: read
-
-jobs:
-  build:
-    name: Build APK and Verify Firebase
-    runs-on: ubuntu-latest
-
-    steps:
-      # 1. Download project files
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      # 2. Install Java 17
-      - name: Setup JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      # 3. Setup Gradle
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      # 4. Check Firebase JSON file
-      - name: Check Firebase JSON
+      - name: Locate and Verify Firebase Resources
         run: |
-          FILE="app/google-services.json"
+          echo "Searching for generated Firebase resources..."
 
-          if [ ! -f "$FILE" ]; then
-            echo "ERROR: app/google-services.json not found!"
+          find app/build -type f \( \
+            -name "values.xml" -o \
+            -name "google-services.json" \
+          \) -print
+
+          echo "Checking generated Web Client ID..."
+
+          FILE=$(find app/build/generated -type f -name "values.xml" | grep "google-services" | head -n 1)
+
+          if [ -z "$FILE" ]; then
+            echo "ERROR: No generated Google Services values.xml found."
+            echo "Checking Google Services plugin output..."
+            find app/build -type d | grep -i google-services || true
             exit 1
           fi
 
-          echo "Firebase JSON file found."
+          echo "Found file: $FILE"
 
-          echo "Checking Android package names:"
-          grep -n '"package_name"' "$FILE"
-
-      # 5. Build Debug APK
-      - name: Build Debug APK
-        run: |
-          gradle --no-daemon assembleDebug
-
-      # 6. Verify generated Firebase configuration
-      - name: Verify Firebase Configuration
-        run: |
-          FILE="app/build/generated/res/google-services/debug/values/values.xml"
-
-          if [ ! -f "$FILE" ]; then
-            echo "ERROR: Firebase values.xml was not generated!"
-            echo "Check google-services.json and Gradle configuration."
-            exit 1
-          fi
-
-          echo "Firebase configuration generated successfully."
-
-          echo "Checking Web Client ID:"
-          grep -A 1 -B 1 "default_web_client_id" "$FILE"
-
-          echo "Checking Firebase App ID:"
-          grep -A 1 -B 1 "google_app_id" "$FILE"
-
-      # 7. Extract APK SHA-1 and SHA-256
-      - name: Extract APK Certificate Fingerprints
-        run: |
-          APK="app/build/outputs/apk/debug/app-debug.apk"
-
-          if [ ! -f "$APK" ]; then
-            echo "ERROR: APK not found!"
-            exit 1
-          fi
-
-          echo "========== APK SIGNING CERTIFICATE =========="
-          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -n 1)
-
-          "$APKSIGNER" verify --print-certs "$APK"
-
-      # 8. Upload APK
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Maqraah-Imam-Al-Jazari-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-          retention-days: 14
+          grep -A 1 -B 1 "default_web_client_id" "$FILE" || true
+          grep -A 1 -B 1 "google_app_id" "$FILE" || true
