@@ -195,7 +195,9 @@ object AuthManager {
                 val activity = context as? Activity
 
                 if (activity == null) {
-                    onAuthError("Activity context is required for Google Sign-In")
+                    onAuthError(
+                        "Activity context is required for Google Sign-In"
+                    )
                     return@launch
                 }
 
@@ -245,14 +247,23 @@ object AuthManager {
                 onAuthCancelled()
 
             } catch (e: Exception) {
+                val details = buildString {
+                    append("Error type: ${e.javaClass.name}")
+                    append("\nMessage: ${e.message ?: "No message"}")
+
+                    e.cause?.let {
+                        append("\nCause: ${it.javaClass.name}")
+                        append("\nCause message: ${it.message ?: "No message"}")
+                    }
+                }
+
                 Log.e(
-                    "Auth",
-                    "Google Sign-In failed",
+                    "AuthManager",
+                    "Google Sign-In diagnostic: $details",
                     e
                 )
-                onAuthError(
-                    e.localizedMessage ?: "Google Sign-In failed"
-                )
+
+                onAuthError(details)
             }
         }
     }
