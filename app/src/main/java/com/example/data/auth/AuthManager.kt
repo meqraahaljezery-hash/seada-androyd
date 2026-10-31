@@ -19,7 +19,6 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -28,7 +27,6 @@ object AuthManager {
 
     private const val TAG = "AuthManager"
 
-    // قراءة Web Client ID من google-services.json
     private fun getWebClientId(context: Context): String? {
         val resId = context.resources.getIdentifier(
             "default_web_client_id",
@@ -43,76 +41,81 @@ object AuthManager {
         }
     }
 
-    // الحصول على قاعدة بيانات Firestore
-    private fun getFirestoreDb(context: Context): FirebaseFirestore {
-        val dbIdRes = context.resources.getIdentifier(
-            "firestore_database_id",
-            "string",
-            context.packageName
-        )
-
-        val dbId = if (dbIdRes != 0) {
-            context.getString(dbIdRes)
-        } else {
-            null
-        }
-
-        return if (!dbId.isNullOrBlank()) {
-            FirebaseFirestore.getInstance(dbId)
-        } else {
-            FirebaseFirestore.getInstance()
-        }
+    // Use the default Firestore database.
+    private fun getFirestoreDb(): FirebaseFirestore {
+        return FirebaseFirestore.getInstance()
     }
 
-    // حفظ بيانات المستخدم
+    // Save user profile without resetting existing role or balance.
     private suspend fun saveUserMetadataToFirestore(
-        context: Context,
         firebaseUser: FirebaseUser
     ) {
         val uid = firebaseUser.uid
 
-        val userRef = getFirestoreDb(context)
+        val userRef = getFirestoreDb()
             .collection("users")
             .document(uid)
 
-        val userData = mapOf(
-            "uid" to uid,
-            "name" to (
-                firebaseUser.displayName
-                    ?: "طالب مقرأة الإمام الجزري"
-            ),
-            "email" to (
-                firebaseUser.email
-                    ?: "student@maqraah.org"
-            ),
-            "photoUrl" to (
-                firebaseUser.photoUrl?.toString() ?: ""
-            ),
-            "role" to "student",
-            "status" to "active",
-            "studentCode" to "IM-STU-${uid.take(6).uppercase()}",
-            "minuteBalance" to 100L,
-            "updatedAt" to FieldValue.serverTimestamp()
-        )
-
         try {
-            userRef.set(
-                userData + mapOf(
-                    "createdAt" to FieldValue.serverTimestamp()
-                ),
-                SetOptions.merge()
-            ).await()
+            val snapshot = userRef.get().await()
 
-            Log.d(TAG, "User metadata saved: $uid")
+            if (snapshot.exists()) {
+                val updates = mutableMapOf<String, Any>(
+                    "updatedAt" to FieldValue.serverTimestamp()
+                )
+
+                firebaseUser.displayName?.let {
+                    updates["name"] = it
+                }
+
+                firebaseUser.email?.let {
+                    updates["email"] = it
+                }
+
+                firebaseUser.photoUrl?.toString()?.let {
+                    updates["photoUrl"] = it
+                }
+
+                userRef.update(updates).await()
+
+                Log.d(TAG, "Existing user profile updated: $uid")
+
+            } else {
+                val userData = hashMapOf<String, Any>(
+                    "uid" to uid,
+                    "name" to (
+                        firebaseUser.displayName
+                            ?: "طالب مقرأة الإمام الجزري"
+                    ),
+                    "email" to (
+                        firebaseUser.email
+                            ?: "student@maqraah.org"
+                    ),
+                    "photoUrl" to (
+                        firebaseUser.photoUrl?.toString() ?: ""
+                    ),
+                    "role" to "student",
+                    "status" to "active",
+                    "studentCode" to
+                        "IM-STU-${uid.take(6).uppercase()}",
+                    "minuteBalance" to 100L,
+                    "createdAt" to FieldValue.serverTimestamp(),
+                    "updatedAt" to FieldValue.serverTimestamp()
+                )
+
+                userRef.set(userData).await()
+
+                Log.d(TAG, "New user profile created: $uid")
+            }
 
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to save user metadata", e)
+            Log.e(TAG, "Firestore profile operation failed", e)
+            throw e
         }
     }
 
-    // تحويل Google ID Token إلى Firebase Credential
+    // Convert Google credential into Firebase authentication.
     private suspend fun authenticateWithFirebase(
-        context: Context,
         credential: androidx.credentials.Credential
     ) {
         if (
@@ -138,14 +141,15 @@ object AuthManager {
             .signInWithCredential(firebaseCredential)
             .await()
 
-        result.user?.let { user ->
-            saveUserMetadataToFirestore(context, user)
-        } ?: throw IllegalStateException(
-            "Firebase authentication returned no user"
-        )
+        val user = result.user
+            ?: throw IllegalStateException(
+                "Firebase authentication returned no user"
+            )
+
+        saveUserMetadataToFirestore(user)
     }
 
-    // تسجيل الدخول التلقائي
+    // Automatic sign-in.
     fun attemptAutoSignIn(
         context: Context,
         credentialManager: CredentialManager,
@@ -157,8 +161,13 @@ object AuthManager {
 
         if (currentUser != null) {
             scope.launch {
-                saveUserMetadataToFirestore(context, currentUser)
-                onAuthSuccess()
+                try {
+                    saveUserMetadataToFirestore(currentUser)
+                    onAuthSuccess()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Automatic profile sync failed", e)
+                    onUnauthenticated()
+                }
             }
             return
         }
@@ -177,7 +186,7 @@ object AuthManager {
             .setAutoSelectEnabled(true)
             .build()
 
-        val request = GetCredentialRequest.Builder()
+        val request = androidx.credentials.GetCredentialRequest.Builder()
             .addCredentialOption(googleOption)
             .build()
 
@@ -188,11 +197,7 @@ object AuthManager {
                     request
                 )
 
-                authenticateWithFirebase(
-                    context,
-                    result.credential
-                )
-
+                authenticateWithFirebase(result.credential)
                 onAuthSuccess()
 
             } catch (e: Exception) {
@@ -202,7 +207,7 @@ object AuthManager {
         }
     }
 
-    // تسجيل الدخول اليدوي باستخدام Google
+    // Manual Google sign-in.
     fun signInWithGoogle(
         context: Context,
         credentialManager: CredentialManager,
@@ -227,22 +232,22 @@ object AuthManager {
                 if (clientId.isNullOrBlank()) {
                     onAuthError(
                         "default_web_client_id not found. " +
-                        "Check google-services.json"
+                            "Check google-services.json"
                     )
                     return@launch
                 }
 
                 val credential = try {
-                    // المحاولة الأولى: Google ID Option
                     val googleOption = GetGoogleIdOption.Builder()
                         .setFilterByAuthorizedAccounts(false)
                         .setServerClientId(clientId)
                         .setAutoSelectEnabled(false)
                         .build()
 
-                    val request = GetCredentialRequest.Builder()
-                        .addCredentialOption(googleOption)
-                        .build()
+                    val request =
+                        androidx.credentials.GetCredentialRequest.Builder()
+                            .addCredentialOption(googleOption)
+                            .build()
 
                     credentialManager.getCredential(
                         activity,
@@ -252,18 +257,16 @@ object AuthManager {
                 } catch (e: NoCredentialException) {
                     Log.w(
                         TAG,
-                        "No credential from GetGoogleIdOption. " +
-                        "Trying explicit Google sign-in.",
+                        "No credential available. Trying explicit sign-in.",
                         e
                     )
 
-                    // المحاولة الثانية: نافذة تسجيل Google الصريحة
                     val signInOption =
                         GetSignInWithGoogleOption.Builder(clientId)
                             .build()
 
                     val fallbackRequest =
-                        GetCredentialRequest.Builder()
+                        androidx.credentials.GetCredentialRequest.Builder()
                             .addCredentialOption(signInOption)
                             .build()
 
@@ -273,42 +276,32 @@ object AuthManager {
                     ).credential
                 }
 
-                authenticateWithFirebase(
-                    context,
-                    credential
-                )
+                authenticateWithFirebase(credential)
 
                 onAuthSuccess()
 
             } catch (e: GetCredentialCancellationException) {
-                Log.w(TAG, "User cancelled Google sign-in", e)
+                Log.w(TAG, "Google sign-in cancelled", e)
                 onAuthCancelled()
 
             } catch (e: Exception) {
                 val details = buildString {
-                    append("Error type: ${e.javaClass.name}")
-                    append("\nMessage: ${e.message ?: "No message"}")
+                    appendLine("Error type: ${e.javaClass.name}")
+                    appendLine("Message: ${e.message ?: "No message"}")
 
                     e.cause?.let {
-                        append("\nCause: ${it.javaClass.name}")
-                        append(
-                            "\nCause message: ${it.message ?: "No message"}"
-                        )
+                        appendLine("Cause: ${it.javaClass.name}")
+                        appendLine("Cause message: ${it.message}")
                     }
                 }
 
-                Log.e(
-                    TAG,
-                    "Google Sign-In failed: $details",
-                    e
-                )
-
+                Log.e(TAG, "Google sign-in failed: $details", e)
                 onAuthError(details)
             }
         }
     }
 
-    // تسجيل الخروج
+    // Sign out.
     fun signOut(
         context: Context,
         credentialManager: CredentialManager,
@@ -326,11 +319,7 @@ object AuthManager {
                 Log.d(TAG, "Credential state cleared")
 
             } catch (e: Exception) {
-                Log.e(
-                    TAG,
-                    "Failed to clear credential state",
-                    e
-                )
+                Log.e(TAG, "Failed to clear credential state", e)
 
             } finally {
                 onSignOutComplete()
