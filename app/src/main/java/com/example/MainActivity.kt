@@ -96,12 +96,12 @@ class MainActivity : ComponentActivity() {
               lang = currentLang,
               isAdminMode = isAdminMode,
               onToggleAdminMode = { isAdminMode = !isAdminMode },
+              // ✅ الإصلاح: onComplete بدل onSignOutComplete + scope
               onLogout = {
                 AuthManager.signOut(
                   context = context,
                   credentialManager = credentialManager,
-                  onSignOutComplete = { currentUser = null },
-                  scope = coroutineScope
+                  onComplete = { currentUser = null }
                 )
               }
             )
