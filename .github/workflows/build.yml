@@ -17,45 +17,32 @@ permissions:
 
 jobs:
   build:
-    name: Build APK and Diagnose Firebase
+    name: Build Debug APK and Diagnose Firebase
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout repository
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 2. Setup Java
       - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      # 3. Setup Gradle
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      # 4. Check project files
       - name: Check Project Files
         run: |
           echo "========== PROJECT FILES =========="
-
-          echo "Current directory:"
           pwd
-
-          echo "Project files:"
           ls -la
-
-          echo "App directory:"
           ls -la app || true
 
-      # 5. Verify Firebase JSON
       - name: Verify Firebase JSON
         run: |
           FILE="app/google-services.json"
-
-          echo "========== FIREBASE JSON CHECK =========="
 
           if [ ! -f "$FILE" ]; then
             echo "ERROR: google-services.json is missing!"
@@ -70,18 +57,14 @@ jobs:
           echo "Project information:"
           grep -n '"project_id"' "$FILE" || true
 
-      # 6. Build Debug APK
       - name: Build Debug APK
         run: |
           gradle --no-daemon assembleDebug --stacktrace
 
-      # 7. Diagnose Firebase generated resources
-      - name: Debug Firebase Build Resources
+      - name: Diagnose Firebase Resources
         if: always()
         run: |
           echo "========== BUILD STATUS =========="
-
-          echo "Checking app/build directory..."
 
           if [ -d "app/build" ]; then
             find app/build -maxdepth 7 -type f | head -n 200
@@ -89,28 +72,12 @@ jobs:
             echo "app/build directory does not exist"
           fi
 
-          echo "========== GOOGLE SERVICES FILE =========="
-
-          if [ -f "app/google-services.json" ]; then
-            echo "google-services.json EXISTS"
-          else
-            echo "google-services.json MISSING"
-          fi
-
-          echo "========== GENERATED VALUES FILES =========="
-
-          find app/build -type f -name "values.xml" -print 2>/dev/null || true
-
-          echo "========== GOOGLE SERVICES OUTPUT =========="
-
-          find app/build -iname "*google*services*" -print 2>/dev/null || true
-
           echo "========== GENERATED WEB CLIENT ID =========="
 
           find app/build -type f -name "values.xml" -print0 2>/dev/null |
           while IFS= read -r -d '' FILE; do
             if grep -q "default_web_client_id" "$FILE"; then
-              echo "Found Web Client ID in: $FILE"
+              echo "Found in: $FILE"
               grep "default_web_client_id" "$FILE"
             fi
           done
@@ -120,20 +87,15 @@ jobs:
           find app/build -type f -name "values.xml" -print0 2>/dev/null |
           while IFS= read -r -d '' FILE; do
             if grep -q "google_app_id" "$FILE"; then
-              echo "Found Firebase App ID in: $FILE"
+              echo "Found in: $FILE"
               grep "google_app_id" "$FILE"
             fi
           done
 
-          echo "========== END FIREBASE DIAGNOSTICS =========="
-
-      # 8. Extract APK certificate fingerprints
       - name: Extract APK Certificate Fingerprints
         if: always()
         run: |
           APK="app/build/outputs/apk/debug/app-debug.apk"
-
-          echo "========== APK CERTIFICATE =========="
 
           if [ ! -f "$APK" ]; then
             echo "APK was not generated."
@@ -143,13 +105,18 @@ jobs:
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" \
             -name apksigner | sort -V | tail -n 1)
 
-          if [ -n "$APKSIGNER" ]; then
-            "$APKSIGNER" verify --print-certs "$APK"
-          else
-            echo "apksigner not found."
+          if [ -z "$APKSIGNER" ]; then
+            echo "ERROR: apksigner not found."
+            exit 1
           fi
 
-      # 9. Upload APK
+          echo "========== APK CERTIFICATE =========="
+
+          "$APKSIGNER" verify --print-certs "$APK"
+
+          echo "========== EXPECTED DEBUG SHA-1 =========="
+          echo "c59e7ec5d7a38311b1069b2245c120e196765e46"
+
       - name: Upload Debug APK
         if: success()
         uses: actions/upload-artifact@v4
