@@ -1,4 +1,3 @@
-
 name: Build Maqraah Android APK
 
 on:
@@ -57,9 +56,23 @@ jobs:
           echo "Project information:"
           grep -n '"project_id"' "$FILE" || true
 
+      # ==========================================
+      # الخطوة الجديدة: فك تشفير مفتاح التوقيع
+      # ==========================================
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/my-release-key.jks
+
+      # ==========================================
+      # خطوة البناء المعدلة: استخدام مفتاح التوقيع
+      # ==========================================
       - name: Build Debug APK
         run: |
-          gradle --no-daemon assembleDebug --stacktrace
+          gradle --no-daemon assembleDebug --stacktrace \
+            -Pandroid.injected.signing.store.file=$(pwd)/app/my-release-key.jks \
+            -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
+            -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
+            -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
 
       - name: Diagnose Firebase Resources
         if: always()
@@ -113,9 +126,6 @@ jobs:
           echo "========== APK CERTIFICATE =========="
 
           "$APKSIGNER" verify --print-certs "$APK"
-
-          echo "========== EXPECTED DEBUG SHA-1 =========="
-          echo "c59e7ec5d7a38311b1069b2245c120e196765e46"
 
       - name: Upload Debug APK
         if: success()
