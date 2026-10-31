@@ -14,6 +14,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "591929401950-1kpr930e0b61gboffhmk2klrtdvn0417.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.meqraa.aljezery",
+            "certificate_hash": "f7856b4771dea311079f31aec61a07944f6c8bb0"
+          }
+        },
+        {
+          "client_id": "591929401950-kun9m1nhceaobbmptsltj4tm4riedj3a.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.meqraa.aljezery",
+            "certificate_hash": "0372e8620379cbb271ab156a3581abe74bd147ee"
+          }
+        },
+        {
           "client_id": "591929401950-vdrl7lv274dnd6lflsbc2tdopo0gauok.apps.googleusercontent.com",
           "client_type": 3
         }
