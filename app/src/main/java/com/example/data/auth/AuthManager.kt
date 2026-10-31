@@ -9,9 +9,12 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.NoCredentialException
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FieldValue
@@ -23,22 +26,36 @@ import kotlinx.coroutines.tasks.await
 
 object AuthManager {
 
+    private const val TAG = "AuthManager"
+
+    // قراءة Web Client ID من google-services.json
     private fun getWebClientId(context: Context): String? {
         val resId = context.resources.getIdentifier(
             "default_web_client_id",
             "string",
             context.packageName
         )
-        return if (resId != 0) context.getString(resId) else null
+
+        return if (resId != 0) {
+            context.getString(resId)
+        } else {
+            null
+        }
     }
 
+    // الحصول على قاعدة بيانات Firestore
     private fun getFirestoreDb(context: Context): FirebaseFirestore {
         val dbIdRes = context.resources.getIdentifier(
             "firestore_database_id",
             "string",
             context.packageName
         )
-        val dbId = if (dbIdRes != 0) context.getString(dbIdRes) else null
+
+        val dbId = if (dbIdRes != 0) {
+            context.getString(dbIdRes)
+        } else {
+            null
+        }
 
         return if (!dbId.isNullOrBlank()) {
             FirebaseFirestore.getInstance(dbId)
@@ -47,42 +64,88 @@ object AuthManager {
         }
     }
 
+    // حفظ بيانات المستخدم
     private suspend fun saveUserMetadataToFirestore(
         context: Context,
-        firebaseUser: com.google.firebase.auth.FirebaseUser
+        firebaseUser: FirebaseUser
     ) {
         val uid = firebaseUser.uid
-        val db = getFirestoreDb(context)
-        val userRef = db.collection("users").document(uid)
+
+        val userRef = getFirestoreDb(context)
+            .collection("users")
+            .document(uid)
 
         val userData = mapOf(
             "uid" to uid,
-            "name" to (firebaseUser.displayName ?: "طالب مقرأة الإمام الجزري"),
-            "email" to (firebaseUser.email ?: "student@maqraah.org"),
-            "photoUrl" to (firebaseUser.photoUrl?.toString() ?: ""),
+            "name" to (
+                firebaseUser.displayName
+                    ?: "طالب مقرأة الإمام الجزري"
+            ),
+            "email" to (
+                firebaseUser.email
+                    ?: "student@maqraah.org"
+            ),
+            "photoUrl" to (
+                firebaseUser.photoUrl?.toString() ?: ""
+            ),
             "role" to "student",
             "status" to "active",
             "studentCode" to "IM-STU-${uid.take(6).uppercase()}",
             "minuteBalance" to 100L,
-            "createdAt" to FieldValue.serverTimestamp(),
             "updatedAt" to FieldValue.serverTimestamp()
         )
 
         try {
-            userRef.set(userData, SetOptions.merge()).await()
-            Log.d(
-                "AuthManager",
-                "User metadata saved successfully for $uid"
-            )
+            userRef.set(
+                userData + mapOf(
+                    "createdAt" to FieldValue.serverTimestamp()
+                ),
+                SetOptions.merge()
+            ).await()
+
+            Log.d(TAG, "User metadata saved: $uid")
+
         } catch (e: Exception) {
-            Log.e(
-                "AuthManager",
-                "Failed to save user metadata to Firestore",
-                e
-            )
+            Log.e(TAG, "Failed to save user metadata", e)
         }
     }
 
+    // تحويل Google ID Token إلى Firebase Credential
+    private suspend fun authenticateWithFirebase(
+        context: Context,
+        credential: androidx.credentials.Credential
+    ) {
+        if (
+            credential !is CustomCredential ||
+            credential.type !=
+            GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
+        ) {
+            throw IllegalStateException(
+                "Unexpected credential type: ${credential.type}"
+            )
+        }
+
+        val googleIdToken = GoogleIdTokenCredential
+            .createFrom(credential.data)
+            .idToken
+
+        val firebaseCredential = GoogleAuthProvider.getCredential(
+            googleIdToken,
+            null
+        )
+
+        val result = Firebase.auth
+            .signInWithCredential(firebaseCredential)
+            .await()
+
+        result.user?.let { user ->
+            saveUserMetadataToFirestore(context, user)
+        } ?: throw IllegalStateException(
+            "Firebase authentication returned no user"
+        )
+    }
+
+    // تسجيل الدخول التلقائي
     fun attemptAutoSignIn(
         context: Context,
         credentialManager: CredentialManager,
@@ -90,11 +153,11 @@ object AuthManager {
         onUnauthenticated: () -> Unit,
         scope: CoroutineScope
     ) {
-        if (Firebase.auth.currentUser != null) {
+        val currentUser = Firebase.auth.currentUser
+
+        if (currentUser != null) {
             scope.launch {
-                Firebase.auth.currentUser?.let {
-                    saveUserMetadataToFirestore(context, it)
-                }
+                saveUserMetadataToFirestore(context, currentUser)
                 onAuthSuccess()
             }
             return
@@ -103,18 +166,19 @@ object AuthManager {
         val clientId = getWebClientId(context)
 
         if (clientId.isNullOrBlank()) {
+            Log.e(TAG, "Web Client ID not found")
             onUnauthenticated()
             return
         }
 
-        val googleIdOption = GetGoogleIdOption.Builder()
+        val googleOption = GetGoogleIdOption.Builder()
             .setFilterByAuthorizedAccounts(true)
             .setServerClientId(clientId)
             .setAutoSelectEnabled(true)
             .build()
 
         val request = GetCredentialRequest.Builder()
-            .addCredentialOption(googleIdOption)
+            .addCredentialOption(googleOption)
             .build()
 
         scope.launch {
@@ -124,44 +188,21 @@ object AuthManager {
                     request
                 )
 
-                val credential = result.credential
+                authenticateWithFirebase(
+                    context,
+                    result.credential
+                )
 
-                if (
-                    credential is CustomCredential &&
-                    credential.type ==
-                    GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
-                ) {
-                    val googleIdToken =
-                        GoogleIdTokenCredential
-                            .createFrom(credential.data)
-                            .idToken
+                onAuthSuccess()
 
-                    val authCredential =
-                        GoogleAuthProvider.getCredential(
-                            googleIdToken,
-                            null
-                        )
-
-                    val authResult =
-                        Firebase.auth
-                            .signInWithCredential(authCredential)
-                            .await()
-
-                    authResult.user?.let {
-                        saveUserMetadataToFirestore(context, it)
-                    }
-
-                    onAuthSuccess()
-                } else {
-                    onUnauthenticated()
-                }
             } catch (e: Exception) {
-                Log.e("Auth", "Automatic Google sign-in failed", e)
+                Log.w(TAG, "Automatic sign-in unavailable", e)
                 onUnauthenticated()
             }
         }
     }
 
+    // تسجيل الدخول اليدوي باستخدام Google
     fun signInWithGoogle(
         context: Context,
         credentialManager: CredentialManager,
@@ -172,26 +213,6 @@ object AuthManager {
     ) {
         scope.launch {
             try {
-                val clientId = getWebClientId(context)
-
-                if (clientId.isNullOrBlank()) {
-                    onAuthError(
-                        "Google Sign-In configuration missing: " +
-                        "default_web_client_id not found"
-                    )
-                    return@launch
-                }
-
-                val googleIdOption = GetGoogleIdOption.Builder()
-                    .setFilterByAuthorizedAccounts(false)
-                    .setServerClientId(clientId)
-                    .setAutoSelectEnabled(false)
-                    .build()
-
-                val request = GetCredentialRequest.Builder()
-                    .addCredentialOption(googleIdOption)
-                    .build()
-
                 val activity = context as? Activity
 
                 if (activity == null) {
@@ -201,49 +222,66 @@ object AuthManager {
                     return@launch
                 }
 
-                val result = credentialManager.getCredential(
-                    activity,
-                    request
-                )
+                val clientId = getWebClientId(context)
 
-                val credential = result.credential
-
-                if (
-                    credential is CustomCredential &&
-                    credential.type ==
-                    GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
-                ) {
-                    val googleIdToken =
-                        GoogleIdTokenCredential
-                            .createFrom(credential.data)
-                            .idToken
-
-                    val authCredential =
-                        GoogleAuthProvider.getCredential(
-                            googleIdToken,
-                            null
-                        )
-
-                    val authResult =
-                        Firebase.auth
-                            .signInWithCredential(authCredential)
-                            .await()
-
-                    authResult.user?.let {
-                        saveUserMetadataToFirestore(context, it)
-                    }
-
-                    onAuthSuccess()
-                } else {
-                    onAuthError("Unexpected Google credential type")
+                if (clientId.isNullOrBlank()) {
+                    onAuthError(
+                        "default_web_client_id not found. " +
+                        "Check google-services.json"
+                    )
+                    return@launch
                 }
 
-            } catch (e: GetCredentialCancellationException) {
-                Log.w(
-                    "Auth",
-                    "Google Sign-In cancelled: ${e.message}",
-                    e
+                val credential = try {
+                    // المحاولة الأولى: Google ID Option
+                    val googleOption = GetGoogleIdOption.Builder()
+                        .setFilterByAuthorizedAccounts(false)
+                        .setServerClientId(clientId)
+                        .setAutoSelectEnabled(false)
+                        .build()
+
+                    val request = GetCredentialRequest.Builder()
+                        .addCredentialOption(googleOption)
+                        .build()
+
+                    credentialManager.getCredential(
+                        activity,
+                        request
+                    ).credential
+
+                } catch (e: NoCredentialException) {
+                    Log.w(
+                        TAG,
+                        "No credential from GetGoogleIdOption. " +
+                        "Trying explicit Google sign-in.",
+                        e
+                    )
+
+                    // المحاولة الثانية: نافذة تسجيل Google الصريحة
+                    val signInOption =
+                        GetSignInWithGoogleOption.Builder(clientId)
+                            .build()
+
+                    val fallbackRequest =
+                        GetCredentialRequest.Builder()
+                            .addCredentialOption(signInOption)
+                            .build()
+
+                    credentialManager.getCredential(
+                        activity,
+                        fallbackRequest
+                    ).credential
+                }
+
+                authenticateWithFirebase(
+                    context,
+                    credential
                 )
+
+                onAuthSuccess()
+
+            } catch (e: GetCredentialCancellationException) {
+                Log.w(TAG, "User cancelled Google sign-in", e)
                 onAuthCancelled()
 
             } catch (e: Exception) {
@@ -253,13 +291,15 @@ object AuthManager {
 
                     e.cause?.let {
                         append("\nCause: ${it.javaClass.name}")
-                        append("\nCause message: ${it.message ?: "No message"}")
+                        append(
+                            "\nCause message: ${it.message ?: "No message"}"
+                        )
                     }
                 }
 
                 Log.e(
-                    "AuthManager",
-                    "Google Sign-In diagnostic: $details",
+                    TAG,
+                    "Google Sign-In failed: $details",
                     e
                 )
 
@@ -268,6 +308,7 @@ object AuthManager {
         }
     }
 
+    // تسجيل الخروج
     fun signOut(
         context: Context,
         credentialManager: CredentialManager,
@@ -281,12 +322,16 @@ object AuthManager {
                 credentialManager.clearCredentialState(
                     ClearCredentialStateRequest()
                 )
+
+                Log.d(TAG, "Credential state cleared")
+
             } catch (e: Exception) {
                 Log.e(
-                    "Auth",
+                    TAG,
                     "Failed to clear credential state",
                     e
                 )
+
             } finally {
                 onSignOutComplete()
             }
