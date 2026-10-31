@@ -59,6 +59,14 @@
           }
         },
         {
+          "client_id": "975429246398-lfmais14hu3ct2v2a46bfi95esrfoead.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.meqraa.aljezery",
+            "certificate_hash": "c44e4d946816e3fd2bed5fe5687bbca2060d6fe5"
+          }
+        },
+        {
           "client_id": "975429246398-kb5kqnp7ro4m1gect7cek68hg258ec8r.apps.googleusercontent.com",
           "client_type": 3
         }
