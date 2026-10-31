@@ -1,86 +1,33 @@
 {
   "project_info": {
-    "project_number": "975429246398",
-    "project_id": "gen-lang-client-0765109525",
-    "storage_bucket": "gen-lang-client-0765109525.firebasestorage.app"
+    "project_number": "591929401950",
+    "project_id": "abu-zeyd-developer",
+    "storage_bucket": "abu-zeyd-developer.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:975429246398:android:2787dff113016c75646def",
-        "android_client_info": {
-          "package_name": "com.aistudio.maqraah.imamaljazari12"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "975429246398-kb5kqnp7ro4m1gect7cek68hg258ec8r.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyAHBMdXiARzdsEUH-9Df9JlmJmCrS1zNRM"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "975429246398-kb5kqnp7ro4m1gect7cek68hg258ec8r.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:975429246398:android:d6880c034a9cbae5646def",
+        "mobilesdk_app_id": "1:591929401950:android:78ccd14c7e79c65f9d8acf",
         "android_client_info": {
           "package_name": "com.meqraa.aljezery"
         }
       },
       "oauth_client": [
         {
-          "client_id": "975429246398-3gk1b5gtj6dgoujp8beplgf2h1ej59l9.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.meqraa.aljezery",
-            "certificate_hash": "c59e7ec5d7a38311b1069b2245c120e196765e46"
-          }
-        },
-        {
-          "client_id": "975429246398-gket474d3mp06hbv07i14c955f4lg6h7.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.meqraa.aljezery",
-            "certificate_hash": "e850f1ad7133ee442d778e0bf14e51cb46908d84"
-          }
-        },
-        {
-          "client_id": "975429246398-lfmais14hu3ct2v2a46bfi95esrfoead.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.meqraa.aljezery",
-            "certificate_hash": "c44e4d946816e3fd2bed5fe5687bbca2060d6fe5"
-          }
-        },
-        {
-          "client_id": "975429246398-kb5kqnp7ro4m1gect7cek68hg258ec8r.apps.googleusercontent.com",
+          "client_id": "591929401950-vdrl7lv274dnd6lflsbc2tdopo0gauok.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyAHBMdXiARzdsEUH-9Df9JlmJmCrS1zNRM"
+          "current_key": "AIzaSyCAYbYl2eXfGGbAAJjgf0Zbjf6WWoIo1nk"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "975429246398-kb5kqnp7ro4m1gect7cek68hg258ec8r.apps.googleusercontent.com",
+              "client_id": "591929401950-vdrl7lv274dnd6lflsbc2tdopo0gauok.apps.googleusercontent.com",
               "client_type": 3
             }
           ]
